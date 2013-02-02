@@ -6,7 +6,7 @@ Author: @_wirepair / isaac.dawson{}gmail.com.
 Keeps a hit count for every instruction executed in a specified module.
 If no module is specified, we use the main executable image.
 After the program finishes running, we write the buffer of hits out to a file which
-then needs to be imported into IDA Pro using dereko's (?) loadlog.py IDAPython sript.
+then needs to be imported into IDA Pro using dereko's (?) loadlog.py IDAPython script.
 
 
 I feel this method is a bit more simpiler then his (and I was having problems with
