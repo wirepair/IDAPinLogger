@@ -6,8 +6,8 @@ If no module is specified, we use the main executable image.
 After the program finishes running, we write the buffer of hits out to a file which
 then needs to be imported into IDA Pro using dereko's (?) loadlog.py IDAPython sript.
 
-I feel this method is a bit more simpiler then his (and i was having problems with
-certain exectuables). But who knows maybe I'm doing something wrong :).
+I feel this method is a bit more simpiler then his (and I was having problems with
+certain executables). But who knows maybe I'm doing something wrong :).
 
 How to build:
 Copy this project into your pin source directory:
@@ -47,16 +47,16 @@ WINDOWS::BYTE *logBuffer;
 // Command line switches
 /* ===================================================================== */
 KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE,  "pintool",
-    "o", "", "specify file name for IDAPinLogger output");
+	"o", "", "specify file name for IDAPinLogger output");
 KNOB<string> KnobModuleToLog(KNOB_MODE_WRITEONCE, "pintool",
 	"m", "", "specify the module to record instruction visits.");
 
 INT32 Usage()
 {
 	cerr << "This tool writes the number of times an instruction is called to a map file " << endl <<
-            "that can then be fed into IDA Pro to highlight which instructions were executed." << endl << endl;
-    cerr << KNOB_BASE::StringKnobSummary() << endl;
-    return -1;
+			"that can then be fed into IDA Pro to highlight which instructions were executed." << endl << endl;
+	cerr << KNOB_BASE::StringKnobSummary() << endl;
+	return -1;
 }
 
 /* ===================================================================== */
@@ -109,11 +109,11 @@ VOID Instruction(INS ins, VOID *v)
     ADDRINT loc = INS_Address(ins);
 	if (loc >= moduleStart && loc <= moduleEnd)
 	{
-		INS_InsertCall(ins, 
-					   IPOINT_BEFORE, 
-				       (AFUNPTR)IncrementCount, 
-					   IARG_INST_PTR,
-					   IARG_END);
+		INS_InsertCall(ins,
+			IPOINT_BEFORE,
+			(AFUNPTR)IncrementCount, 
+			IARG_INST_PTR,
+			IARG_END);
 	}
 }
 
@@ -129,13 +129,13 @@ VOID Fini(INT32 code, VOID *v)
 
 int main(int argc, char *argv[])
 {
-    if( PIN_Init(argc,argv) )
-    {
-        return Usage();
-    }
-    
-    string fileName = KnobOutputFile.Value();
-    if (!fileName.empty()) 
+	if( PIN_Init(argc,argv) )
+	{
+		return Usage();
+	}
+
+	string fileName = KnobOutputFile.Value();
+	if (!fileName.empty()) 
 	{ 
 		IDAInsLogFile = fopen(fileName.c_str(), "wb+"); 
 	}
@@ -147,11 +147,11 @@ int main(int argc, char *argv[])
 
 	IMG_AddInstrumentFunction(ImageLoad, 0);
 	INS_AddInstrumentFunction(Instruction, 0);
-    PIN_AddFiniFunction(Fini, 0);
-    // Start the program, never returns
-    PIN_StartProgram();
-    
-    return 0;
+	PIN_AddFiniFunction(Fini, 0);
+	// Start the program, never returns
+	PIN_StartProgram();
+
+	return 0;
 }
 
 /* ===================================================================== */
