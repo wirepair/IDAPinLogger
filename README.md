@@ -1,4 +1,5 @@
 IDAPinLogger:
+================================
 
 Author: @_wirepair / isaac.dawson{}gmail.com.
 
@@ -13,11 +14,14 @@ certain executables). But who knows maybe i'm doing something wrong :).
 
 
 How to build:
+-------------------------
+
 Copy this project into your pin source directory:
 %pin%\source\tools\IDAPinLogger
 Open Visual Studio (2008) and build.
 
 How to run:
+-------------------------
 
 Log all hits in nc.exe module:
 
