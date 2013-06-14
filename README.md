@@ -12,6 +12,11 @@ then needs to be imported into IDA Pro using dereko's (?) loadlog.py IDAPython s
 I feel this method is a bit more simpiler then his (and I was having problems with
 certain executables). But who knows maybe i'm doing something wrong :).
 
+Update: It is now possible to specify when logging should begin/end by giving an offset
+to an instruction where, after it is called logging should start. Also by specifying
+an end instruction, logging will stop. This makes it much easier to identify code paths
+that are taken after a certain point with in the applications life cycle.
+
 
 How to build:
 -------------------------
@@ -34,3 +39,6 @@ c:\pin\pin.exe -t C:\pin\IDAPinLogger.dll -- nc.exe -l -v -p 999
 Log all hits in supporting module (note case sensitive!):
 
 c:\pin\pin.exe -t C:\pin\IDAPinLogger.dll -m KERNEL32.DLL -- nc.exe -l -v -p 999
+
+Only start logging hits after instruction at base+0x991c is hit, stop logging after base+0x4242 is hit:
+c:\pin\pin.exe -t C:\pin\IDAPinLogger.dll -s 0x991c -e 0x4242 -- nc.exe -l -v -p 999

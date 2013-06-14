@@ -22,10 +22,17 @@ c:\pin\pin.exe -t C:\pin\IDAPinLogger.dll -- nc.exe -l -v -p 999
 
 Log all hits in supporting module (note case sensitive!):
 c:\pin\pin.exe -t C:\pin\IDAPinLogger.dll -m KERNEL32.DLL -- nc.exe -l -v -p 999
+
+Only start logging hits after instruction at base+0x991c is hit, stop logging after base+0x4242 is hit:
+c:\pin\pin.exe -t C:\pin\IDAPinLogger.dll -s 0x991c -e 0x4242 -- nc.exe -l -v -p 999
+
+
 */
 #include "pin.H"
 #include <iostream>
+#include <sstream>
 #include <fstream>
+#include <iomanip>
 
 namespace WINDOWS {
 #include "Windows.h"
@@ -42,7 +49,10 @@ unsigned int moduleSize = 0;
 // Hit Count Variables.
 FILE *IDAInsLogFile;
 WINDOWS::BYTE *logBuffer;
-
+//Log start/stop variables
+ADDRINT gLogStart = -1;
+ADDRINT gLogStop = -1;
+bool gLogging = true;
 /* ===================================================================== */
 // Command line switches
 /* ===================================================================== */
@@ -50,6 +60,11 @@ KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE,  "pintool",
 	"o", "", "specify file name for IDAPinLogger output");
 KNOB<string> KnobModuleToLog(KNOB_MODE_WRITEONCE, "pintool",
 	"m", "", "specify the module to record instruction visits.");
+KNOB<string> KnobLogStart(KNOB_MODE_WRITEONCE, "pintool",
+    "s", "", "specify instruction offset (will be auto added to base) that will start logging.");
+KNOB<string> KnobLogStop(KNOB_MODE_WRITEONCE, "pintool",
+    "e", "", "specify instruction offset (will be auto added to base) that will stop logging.");
+
 
 INT32 Usage()
 {
@@ -62,9 +77,25 @@ INT32 Usage()
 /* ===================================================================== */
 // Analysis routines
 /* ===================================================================== */
+VOID StartLogging(UINT32 eip)
+{
+	gLogging = true;
+	std::cerr << "Logging Started due to log start instruction hit." << endl;
+}
+
+VOID StopLogging(UINT32 eip)
+{
+	gLogging = false;
+	std::cerr << "Logging Stopped due to log stop instruction hit." << endl;
+}
+
 VOID IncrementCount(UINT32 eip)
 {
 	unsigned int idx = eip - moduleStart;
+	if (gLogging == false)
+	{ 
+		return; 
+	}
 	// if we get called more than 255 times, well, stop.
 	if (logBuffer[idx] >= 255)
 	{
@@ -93,6 +124,16 @@ VOID ImageLoad(IMG img, VOID *v)
 	moduleStart = IMG_LowAddress(img);
 	moduleEnd = IMG_HighAddress(img);
 	moduleSize = moduleEnd - moduleStart;
+	if (gLogStart != -1)
+	{
+		gLogStart += moduleStart;
+	}
+	
+	if (gLogStop != -1)
+	{
+		gLogStop += moduleStart;
+	}
+
 	std::cerr << "Module size is: " << moduleSize << endl;
 	logBuffer = (WINDOWS::BYTE *)calloc(moduleSize,sizeof(WINDOWS::BYTE));
 	if (logBuffer == NULL)
@@ -107,6 +148,24 @@ VOID ImageLoad(IMG img, VOID *v)
 VOID Instruction(INS ins, VOID *v)
 {
     ADDRINT loc = INS_Address(ins);
+	if (gLogStart != -1 && loc == gLogStart)
+	{
+		INS_InsertCall(ins,
+			IPOINT_BEFORE,
+			(AFUNPTR)StartLogging,
+			IARG_INST_PTR,
+			IARG_END);
+	}
+
+	if (gLogStop != -1 && loc == gLogStop)
+	{
+		INS_InsertCall(ins,
+			IPOINT_BEFORE,
+			(AFUNPTR)StopLogging,
+			IARG_INST_PTR,
+			IARG_END);
+	}
+
 	if (loc >= moduleStart && loc <= moduleEnd)
 	{
 		INS_InsertCall(ins,
@@ -122,6 +181,7 @@ VOID Fini(INT32 code, VOID *v)
 {
 	std::cerr << "Writing instruction hits to disk." << endl;
 	fwrite(logBuffer, sizeof(WINDOWS::BYTE), moduleSize, IDAInsLogFile);
+	
 	fflush(IDAInsLogFile);
 	fclose(IDAInsLogFile);
 	free(logBuffer);
@@ -143,6 +203,19 @@ int main(int argc, char *argv[])
 	{
 		std::cerr << "Need an outfile file dingus." << endl;
 		return -1;
+	}
+	
+	if (!KnobLogStart.Value().empty())
+	{
+		stringstream converter(KnobLogStart.Value());
+		converter >> hex >> gLogStart;
+		gLogging = false;
+	}
+
+	if (!KnobLogStop.Value().empty())
+	{
+		stringstream converter(KnobLogStop.Value());
+		converter >> hex >> gLogStop;
 	}
 
 	IMG_AddInstrumentFunction(ImageLoad, 0);
