@@ -34,6 +34,7 @@ def main():
 		print("Need log file to parse data...");
 		return;
 	buff = f.read();
+	functions = set()
 	for index in range(0, len(buff)):
 		exec_count = ord(buff[index]);
 		if exec_count == 0:
@@ -43,6 +44,12 @@ def main():
 		if exec_count > 11: exec_count = 11;
 		        
 		ida_color = clist[exec_count];
+		if (not (idc.GetFunctionName(imagebase+index) in functions)):
+                        func = idc.GetFunctionName(imagebase+index)
+                        print "hit @ 0x%08x function %s"%(imagebase+index, func)
+                        functions.add(func)
+                
+		
 
 		idc.SetColor(imagebase + index, CIC_ITEM, ida_color);
 
